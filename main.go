@@ -2,13 +2,19 @@ package main
 
 import (
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 var templates = template.Must(template.ParseFiles("templates/not_found.html"))
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Invalid method", http.StatusBadRequest)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`PONG!`))
@@ -22,12 +28,36 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Invalid method", http.StatusBadRequest)
+	}
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("upload")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+	f, err := os.OpenFile("./static/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+	io.Copy(f, file)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success": "1"}`))
+}
+
 func main() {
 	fs := http.FileServer(http.Dir("static"))
 
-	http.HandleFunc("/ping", pingHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.HandleFunc("/ping", pingHandler)
 	http.HandleFunc("/", notFoundHandler)
+	http.HandleFunc("/upload", uploadHandler)
 
 	log.Fatal(http.ListenAndServe(":9011", nil))
 }
