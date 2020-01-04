@@ -13,8 +13,8 @@ import (
 
 var templates = template.Must(template.ParseFiles("templates/not_found.html"))
 
-func fileExists(filename string) bool {
-	info, err := os.Stat("./static/" + filename)
+func fileExists(filename string, dir string) bool {
+	info, err := os.Stat("./static/" + dir + "/" + filename)
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -41,10 +41,26 @@ func isValidMimeType(mime string) bool {
 	case "image/png":
 	case "video/mpeg":
 	case "video/ogg":
+	case "video/mp4":
 	default:
 		valid = false
 	}
 	return valid
+}
+
+func getRootDir(mimeType string) string {
+	dir := "unknown"
+
+	switch {
+	case strings.Contains(mimeType, "video"):
+		dir = "videos"
+	case strings.Contains(mimeType, "image"):
+		dir = "images"
+	default:
+		{
+		}
+	}
+	return dir
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +70,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`PONG ` + timeStamp()))
+	w.Write([]byte(`PONG`))
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,14 +93,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer file.Close()
+	fmt.Printf("file name %+v\n", handler.Filename)
+	fmt.Printf("file size %+v\n", handler.Size)
+	fmt.Printf("file header %+v\n", handler.Header)
 
-	if fileExists(handler.Filename) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		// todo return date of initial upload OR check of a flag to overwrite
-		w.Write([]byte(`file previously uploaded`))
-		return
-	}
 	// todo make mime checking its own function
 	mime, err := getMimeType(file)
 
@@ -98,13 +110,22 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid file type", http.StatusUnsupportedMediaType)
 		return
 	}
-	// ******************************
 
-	fmt.Printf("file name %+v\n", handler.Filename)
-	fmt.Printf("file size %+v\n", handler.Size)
-	fmt.Printf("file header %+v\n", handler.Header)
+	dir := getRootDir(mime)
 
-	f, err := os.OpenFile("./static/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if _, err := os.Stat("./static/" + dir); os.IsNotExist(err) {
+		os.Mkdir("./static/"+dir, 0777)
+	}
+
+	if fileExists(handler.Filename, dir) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		// todo return date of initial upload OR check of a flag to overwrite
+		w.Write([]byte(`file previously uploaded`))
+		return
+	}
+
+	f, err := os.OpenFile("./static/"+dir+"/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
