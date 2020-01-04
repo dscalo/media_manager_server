@@ -9,14 +9,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 var templates = template.Must(template.ParseFiles("templates/not_found.html"))
-
-func timeStamp() string {
-	return time.Now().Format("20060102-120405")
-}
 
 func fileExists(filename string) bool {
 	info, err := os.Stat("./static/" + filename)
