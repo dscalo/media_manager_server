@@ -7,6 +7,20 @@ import (
 	"strings"
 )
 
+func CleanFilename(name string) string {
+	i := 0
+	bytes := []byte(name)
+	for _, b := range bytes {
+		if ('a' <= b && b <= 'z') ||
+			('A' <= b && b <= 'Z') ||
+			('0' <= b && b <= '9') {
+			bytes[i] = b
+			i++
+		}
+	}
+	return string(bytes[:i])
+}
+
 func IsValidMimeType(mime string) bool {
 	valid := true
 	switch strings.TrimSpace(mime) {
