@@ -1,4 +1,4 @@
-package main
+package uploadService
 
 import (
 	"mime/multipart"
