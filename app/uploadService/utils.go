@@ -13,7 +13,7 @@ func CleanFilename(name string) string {
 	for _, b := range bytes {
 		if ('a' <= b && b <= 'z') ||
 			('A' <= b && b <= 'Z') ||
-			('0' <= b && b <= '9') {
+			('0' <= b && b <= '9') || (b == '_') {
 			bytes[i] = b
 			i++
 		}
