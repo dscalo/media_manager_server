@@ -38,12 +38,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dir := GetRootDir(mime)
+	dirPath := path.Join(dirname, "/static/", dir) + "/"
 
-	if _, err := os.Stat(path.Join(dirname, "/static/", dir)); os.IsNotExist(err) {
-		os.Mkdir("./static/"+dir, 0777)
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		os.Mkdir(dirPath, 0777)
 	}
 
-	if FileExists(handler.Filename, dir) {
+	if FileExists(handler.Filename, dirPath) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		// todo return date of initial upload OR check for a flag to overwrite
@@ -51,7 +52,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile("./static/"+dir+"/"+CleanFilename(handler.Filename), os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(dirPath+CleanFilename(handler.Filename), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

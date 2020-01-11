@@ -11,8 +11,23 @@ import (
 import "media_manager/app/uploadService"
 
 var dirname, _ = os.Getwd()
-
 var templates = template.Must(template.ParseFiles(path.Join(dirname, "/templates/not_found.html")))
+
+type Middleware func(http.HandlerFunc) http.HandlerFunc
+
+func ChainMiddleware(h http.HandlerFunc, m ...Middleware) http.HandlerFunc {
+	if len(m) < 1 {
+		return h
+	}
+
+	wrapped := h
+
+	for i := len(m) - 1; i >= 0; i-- {
+		wrapped = m[i](wrapped)
+	}
+
+	return wrapped
+}
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -31,14 +46,30 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+func ipLimiter(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO add logic to get ip and  continue only if internal ip
+		h.ServeHTTP(w, r)
+	})
+}
 
 func Run() {
 	fs := http.FileServer(http.Dir("static"))
-
 	http.Handle("/static/", http.StripPrefix(path.Join(dirname, "/static/"), fs))
-	http.HandleFunc("/ping", pingHandler)
-	http.HandleFunc("/", notFoundHandler)
-	http.HandleFunc("/upload", uploadService.UploadHandler)
+
+	endPoints := map[string]http.HandlerFunc{
+		"/":       notFoundHandler,
+		"/ping":   pingHandler,
+		"/upload": uploadService.UploadHandler,
+	}
+
+	commonMiddleware := []Middleware{
+		ipLimiter,
+	}
+
+	for endPoint, fn := range endPoints {
+		http.HandleFunc(endPoint, ChainMiddleware(fn, commonMiddleware...))
+	}
 
 	log.Fatal(http.ListenAndServe(":9011", nil))
 }

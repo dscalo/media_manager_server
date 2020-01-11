@@ -13,7 +13,7 @@ func CleanFilename(name string) string {
 	for _, b := range bytes {
 		if ('a' <= b && b <= 'z') ||
 			('A' <= b && b <= 'Z') ||
-			('0' <= b && b <= '9') || (b == '_') {
+			('0' <= b && b <= '9') || (b == '_') || (b == '.') {
 			bytes[i] = b
 			i++
 		}
@@ -63,8 +63,8 @@ func GetMimeType(f multipart.File) (string, error) {
 	return mimeType, nil
 }
 
-func FileExists(filename string, dir string) bool {
-	info, err := os.Stat("./static/" + dir + "/" + filename)
+func FileExists(filename string, dirPath string) bool {
+	info, err := os.Stat(dirPath + "/" + filename)
 	if os.IsNotExist(err) {
 		return false
 	}
