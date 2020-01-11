@@ -10,6 +10,14 @@ import (
 
 var dirname, _ = os.Getwd()
 
+type Upload struct {
+	name      string
+	path      string
+	mimeType  string
+	mediaType string
+	tags      []string
+}
+
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid method", http.StatusBadRequest)
@@ -23,28 +31,27 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	upload := Upload{
+		name:     CleanFilename(handler.Filename),
+		mimeType: GetMimeType(file),
+	}
+
 	defer file.Close()
 
-	mime, err := GetMimeType(file)
-	if err != nil {
+	if upload.mimeType == "" {
 		log.Println("Unable to get mime type")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Invalid mime type", http.StatusInternalServerError)
 		return
 	}
 
-	if !IsValidMimeType(mime) {
+	if !IsValidMimeType(upload.mimeType) {
 		http.Error(w, "Invalid file type", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	dir := GetRootDir(mime)
-	dirPath := path.Join(dirname, "/static/", dir) + "/"
+	upload.path = path.Join(dirname, "/static/", GetRootDir(upload.mimeType)) + "/" + upload.name
 
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		os.Mkdir(dirPath, 0777)
-	}
-
-	if FileExists(handler.Filename, dirPath) {
+	if FileExists(upload.path) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		// todo return date of initial upload OR check for a flag to overwrite
@@ -52,7 +59,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile(dirPath+CleanFilename(handler.Filename), os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(upload.path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

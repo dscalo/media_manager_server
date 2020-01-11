@@ -51,20 +51,17 @@ func GetRootDir(mimeType string) string {
 	return dir
 }
 
-func GetMimeType(f multipart.File) (string, error) {
+func GetMimeType(f multipart.File) string {
 	buffer := make([]byte, 512)
 	_, err := f.Read(buffer)
 	if err != nil {
-		return "", err
+		return ""
 	}
-
-	mimeType := http.DetectContentType(buffer)
-
-	return mimeType, nil
+	return http.DetectContentType(buffer)
 }
 
-func FileExists(filename string, dirPath string) bool {
-	info, err := os.Stat(dirPath + "/" + filename)
+func FileExists(path string) bool {
+	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false
 	}
