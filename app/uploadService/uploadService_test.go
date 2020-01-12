@@ -45,6 +45,13 @@ func TestIsValidMimeType(t *testing.T) {
 	}
 }
 
+func TestIsValidMimeType2(t *testing.T) {
+	if IsValidMimeType("") {
+		t.Errorf("IsValidMimeType returns valid for an empty string")
+	}
+
+}
+
 func TestGetRootDir(t *testing.T) {
 	image := "image/png"
 	video := "video/mp4"

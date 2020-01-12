@@ -30,11 +30,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, handler, err := r.FormFile("upload")
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	defer file.Close()
 
 	upload := Upload{
 		name:     CleanFilename(handler.Filename),
@@ -42,16 +43,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		tags:     ParseTags(r.Form.Get("tags")),
 	}
 
-	defer file.Close()
-
-	if upload.mimeType == "" {
+	if !IsValidMimeType(upload.mimeType) {
 		log.Println("Unable to get mime type")
 		http.Error(w, "Invalid mime type", http.StatusInternalServerError)
-		return
-	}
-
-	if !IsValidMimeType(upload.mimeType) {
-		http.Error(w, "Invalid file type", http.StatusUnsupportedMediaType)
 		return
 	}
 
