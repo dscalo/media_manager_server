@@ -21,6 +21,18 @@ func CleanFilename(name string) string {
 	return string(bytes[:i])
 }
 
+func OnlyLetters(s string) string {
+	i := 0
+	bytes := []byte(s)
+	for _, b := range bytes {
+		if ('a' <= b && b <= 'z') || ('A' <= b && b <= 'Z') {
+			bytes[i] = b
+			i++
+		}
+	}
+	return string(bytes[:i])
+}
+
 func IsValidMimeType(mime string) bool {
 	valid := true
 	switch strings.TrimSpace(mime) {
@@ -66,4 +78,26 @@ func FileExists(path string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func ParseTags(tagString string) []string {
+	// used to eliminate dupes
+	set := make(map[string]struct{})
+
+	var tags []string
+	if tagString == "" {
+		return tags
+	}
+
+	for _, s := range strings.Split(tagString, ",") {
+		cleaned := OnlyLetters(s)
+		lower := strings.ToLower(cleaned)
+		if _, ok := set[lower]; ok {
+			continue
+		} else {
+			set[lower] = struct{}{}
+			tags = append(tags, lower)
+		}
+	}
+	return tags
 }

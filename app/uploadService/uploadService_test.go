@@ -19,6 +19,15 @@ func TestCleanFilename2(t *testing.T) {
 	}
 }
 
+func TestOnlyLetters(t *testing.T) {
+	s := "123abc$%D^ E "
+	expect := "abcDE"
+	result := OnlyLetters(s)
+	if result != expect {
+		t.Errorf("OnlyLetters test failed! expected %s, received %s ", expect, result)
+	}
+}
+
 func TestIsValidMimeType(t *testing.T) {
 	valid := []string{"image/png", "image/jpeg", "video/mp4"}
 	notValid := []string{"image/foo", "video/mp3", "something"}
@@ -51,4 +60,28 @@ func TestGetRootDir(t *testing.T) {
 	if GetRootDir(inValid) != "unknown" {
 		t.Errorf("%s should return unknown dir", inValid)
 	}
+}
+
+func TestParseTags(t *testing.T) {
+	s := "appLE, banana ,bird, ap2ple, cherry"
+	expect := []string{"apple", "banana", "bird", "cherry"}
+
+	result := ParseTags(s)
+
+	for i, r := range result {
+		if r != expect[i] {
+			t.Errorf("ParseTags test failed expected: %s, received: %s", expect, result)
+			break
+		}
+	}
+}
+
+func TestParseTags2(t *testing.T) {
+	s := ""
+	result := ParseTags(s)
+
+	if len(result) > 0 {
+		t.Errorf("ParseTages test failed, expected empty slice, received: %s of length: %v", result, len(result))
+	}
+
 }

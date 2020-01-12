@@ -23,9 +23,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid method", http.StatusBadRequest)
 	}
 	// set max file size
-	r.ParseMultipartForm(1024 << 20)
+	err := r.ParseMultipartForm(1024 << 20)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	file, handler, err := r.FormFile("upload")
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -34,6 +39,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	upload := Upload{
 		name:     CleanFilename(handler.Filename),
 		mimeType: GetMimeType(file),
+		tags:     ParseTags(r.Form.Get("tags")),
 	}
 
 	defer file.Close()
