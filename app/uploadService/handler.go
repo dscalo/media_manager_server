@@ -3,20 +3,13 @@ package uploadService
 import (
 	"io"
 	"log"
+	"media_manager/app/models"
 	"net/http"
 	"os"
 	"path"
 )
 
 var dirname, _ = os.Getwd()
-
-type Upload struct {
-	name      string
-	path      string
-	mimeType  string
-	mediaType string
-	tags      []string
-}
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -37,21 +30,24 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer file.Close()
 
-	upload := Upload{
-		name:     CleanFilename(handler.Filename),
-		mimeType: GetMimeType(file),
-		tags:     ParseTags(r.Form.Get("tags")),
+	upload := models.Upload{
+		Name:     CleanFilename(handler.Filename),
+		MimeType: GetMimeType(file),
+		Tags:     ParseTags(r.Form.Get("tags")),
 	}
 
-	if !IsValidMimeType(upload.mimeType) {
+	if !IsValidMimeType(upload.MimeType) {
 		log.Println("Unable to get mime type")
 		http.Error(w, "Invalid mime type", http.StatusInternalServerError)
 		return
 	}
 
-	upload.path = path.Join(dirname, "/static/", GetRootDir(upload.mimeType)) + "/" + upload.name
+	upload.Path = path.Join(
+		dirname,
+		"/static/",
+		GetRootDir(upload.MimeType)) + "/" + upload.Name
 
-	if FileExists(upload.path) {
+	if FileExists(upload.Path) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		// todo return date of initial upload OR check for a flag to overwrite
@@ -59,7 +55,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile(upload.path, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(upload.Path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
