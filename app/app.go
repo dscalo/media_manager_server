@@ -3,6 +3,7 @@ package app
 import (
 	"html/template"
 	"log"
+	"media_manager/app/models"
 	"net/http"
 	"os"
 	"path"
@@ -14,6 +15,10 @@ var dirname, _ = os.Getwd()
 var templates = template.Must(template.ParseFiles(path.Join(dirname, "/templates/not_found.html")))
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
+
+type Env struct {
+	db models.DB
+}
 
 func ChainMiddleware(h http.HandlerFunc, m ...Middleware) http.HandlerFunc {
 	if len(m) < 1 {
@@ -57,10 +62,15 @@ func Run() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix(path.Join(dirname, "/static/"), fs))
 
+	db, err := models.NewDB()
+	if err != nil {
+		log.Panic("Unalbe to conntect to database")
+	}
+
 	endPoints := map[string]http.HandlerFunc{
 		"/":       notFoundHandler,
 		"/ping":   pingHandler,
-		"/upload": uploadService.UploadHandler,
+		"/upload": uploadService.UploadHandler(db),
 	}
 
 	commonMiddleware := []Middleware{
