@@ -1,12 +1,15 @@
 package uploadService
 
 import (
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"io"
 	"log"
 	"media_manager/app/models"
 	"net/http"
 	"os"
 	"path"
+	"time"
 )
 
 var dirname, _ = os.Getwd()
@@ -43,10 +46,12 @@ func UploadHandler(db *models.DB) http.HandlerFunc {
 			return
 		}
 
+		upload.MediaType = GetRootDir(upload.MimeType)
+
 		upload.Path = path.Join(
 			dirname,
 			"/static/",
-			GetRootDir(upload.MimeType)) + "/" + upload.Name
+			upload.MediaType+"/"+upload.Name)
 
 		if FileExists(upload.Path) {
 			w.WriteHeader(http.StatusOK)
@@ -65,8 +70,25 @@ func UploadHandler(db *models.DB) http.HandlerFunc {
 
 		io.Copy(f, file)
 
+		collection := db.Client.Database("dansbrood").Collection("media")
+
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		media := bson.M{
+			"name": upload.Name,
+			"path": upload.Path,
+			"type": upload.MediaType,
+			"tags": upload.Tags,
+			"time": time.Now(),
+		}
+		res, err := collection.InsertOne(ctx, media)
+		if err != nil {
+			log.Panic("error saving to database " + err.Error())
+		}
+		id := res.InsertedID
+
+		log.Printf("added %s to database", id)
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"success": "1"}`))
+		w.Write([]byte(`{"success":}`))
 	}
 }

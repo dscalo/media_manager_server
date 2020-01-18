@@ -63,6 +63,7 @@ func Run() {
 	http.Handle("/static/", http.StripPrefix(path.Join(dirname, "/static/"), fs))
 
 	db, err := models.NewDB()
+
 	if err != nil {
 		log.Panic("Unalbe to conntect to database")
 	}
